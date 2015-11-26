@@ -380,6 +380,25 @@ pgf.draw_points = function(t, pm)
   gp.write("}\n")
 end
 
+pgf.draw_arc = function(x, y, width, height, start_angle, angle)
+  local diameter = width;
+
+  if height < width then
+    diameter = height
+  end
+
+  local radius = diameter / 2
+
+  gp.write("\\filldraw[fill=green!20!white,draw=green!50!black,shift={("..pgf.format_coord(x,y)..")}]\n")
+
+  gp.write("("..pgf.format_coord(0, 0)..")")
+  gp.write(" -- ")
+  gp.write("("..start_angle..":"..pgf.transform_xcoord(radius)..")\n")
+
+  gp.write("arc("..start_angle..":"..start_angle + angle..":"..pgf.transform_xcoord(radius)..")\n")
+
+  gp.write("-- ("..pgf.format_coord(0, 0)..");\n\n")
+end
 
 pgf.set_linetype = function(linetype)
   gp.write("\\gpsetlinetype{"..linetype.."}\n")
@@ -2505,6 +2524,12 @@ term.reset = function(p)
   if gfx.opt.full_doc then
     pgf.write_doc_end()
   end
+  return 1
+end
+
+
+term.arc = function(x, y, width, height, start_angle, angle, arc_style)
+  pgf.draw_arc(x, y, width, height, start_angle, angle)
   return 1
 end
 

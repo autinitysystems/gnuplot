@@ -81,6 +81,11 @@ TERM_PUBLIC void LUA_path __PROTO((int p));
 TERM_PUBLIC void LUA_boxed_text __PROTO((unsigned int, unsigned int, int));
 #endif
 
+#ifdef WITH_PIE
+TERM_PUBLIC void LUA_arc __PROTO((unsigned int x_center, unsigned int y_center, unsigned int width, unsigned int height,
+                                  double start_angle, double end_angle, t_arcstyle arc_style));
+#endif
+
 /* defaults */
 #define LUA_XMAX 10000.0
 #define LUA_YMAX 10000.0
@@ -1411,6 +1416,27 @@ LUA_boxed_text __PROTO((unsigned int x, unsigned int y, int option))
 
 #endif
 
+#ifdef WITH_PIE
+TERM_PUBLIC void
+LUA_arc __PROTO((unsigned int x, unsigned int y, unsigned int width, unsigned int height,
+                 double start_angle, double end_angle, t_arcstyle arc_style))
+{
+    if(LUA_init_luaterm_function("arc")) {
+        lua_pushinteger(L, x);
+        lua_pushinteger(L, y);
+        lua_pushinteger(L, width);
+        lua_pushinteger(L, height);
+        lua_pushnumber(L, start_angle);
+        lua_pushnumber(L, end_angle);
+        lua_pushinteger(L, (int)arc_style);
+        LUA_call_report(lua_pcall(L, 7, 1, tb));
+        lua_term_result = (int)lua_tointeger(L, -1);
+        lua_pop(L, 1);
+    }
+}
+
+#endif
+
 #endif /* TERM_BODY */
 
 
@@ -1471,6 +1497,7 @@ TERM_TABLE_START(tikz_driver)
 #endif
     , NULL /* modify plots */
     , LUA_dashtype
+    , LUA_arc
 TERM_TABLE_END(tikz_driver)
 
 #undef LAST_TERM

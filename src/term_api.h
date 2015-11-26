@@ -241,6 +241,11 @@ typedef struct t_image {
     TBOOLEAN fallback; /* true == don't use terminal-specific code */
 } t_image;
 
+#ifdef WITH_PIE
+   typedef enum t_arcstyle { AS_LINE, AS_FILLED_CHORD, AS_FILLED_PIE_SLICE }
+	   t_arcstyle;
+#endif
+
 /* Operations possible with term->modify_plots() */
 #define MODPLOTS_SET_VISIBLE         (1<<0)
 #define MODPLOTS_SET_INVISIBLE       (1<<1)
@@ -273,12 +278,6 @@ typedef struct t_image {
  * does not support that feature - gnuplot must still be able to
  * function without that terminal feature
  */
-
-#ifdef WITH_PIE
-   typedef enum t_arcstyle { AS_LINE, AS_FILLED_CHORD, AS_FILLED_PIE_SLICE }
-	   t_arcstyle;
-#endif
-
 typedef struct TERMENTRY {
     const char *name;
     const char *description;
