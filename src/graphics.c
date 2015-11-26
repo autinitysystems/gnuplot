@@ -825,6 +825,12 @@ do_plot(struct curve_points *plots, int pcount)
 
 #endif
 
+#ifdef WITH_PIE
+	    case PIE:
+		plot_pie_or_update_axes(this_plot, false, false);
+		break;
+#endif
+
 	    case PARALLELPLOT:
 		plot_parallel(this_plot);
 		break;
@@ -4808,3 +4814,103 @@ skip_pixel:
 
 }
 
+
+#ifdef WITH_PIE
+
+/* Same comment applies as given above for the image routine.
+ */
+#include "util3d.h"
+
+/* These might work better as fuctions, but defines will do for now. */
+#undef ERROR_NOTICE
+#undef ERROR_NOTICE_NEWLINE
+#define ERROR_NOTICE(str)         "\nGNUPLOT (plot_pie):  " str
+#define ERROR_NOTICE_NEWLINE(str) "\n                     " str
+
+/* pie_slice:
+ * Plot a pie slice.
+ */
+void
+pie_slice(double x, double y, double z, double radius, double start_portion, double portion, double thickness)
+{
+#if 0
+		/* One of the delta values in each direction is zero, so add. */
+		if (project_points) {
+		    double x, y;
+		    map3d_xy_double(points[pixel_1_1].x, points[pixel_1_1].y, points[pixel_1_1].z, &x, &y);
+		    corners[0].x = x - fabs(delta_x_grid[0]+delta_x_grid[1])/2;
+		    corners[0].y = y + fabs(delta_y_grid[0]+delta_y_grid[1])/2;
+		    map3d_xy_double(points[pixel_M_N].x, points[pixel_M_N].y, points[pixel_M_N].z, &x, &y);
+		    corners[1].x = x + fabs(delta_x_grid[0]+delta_x_grid[1])/2;
+		    corners[1].y = y - fabs(delta_y_grid[0]+delta_y_grid[1])/2;
+		} else {
+#endif
+		    (*term->arc) (map_x(x), map_y(y), map_x(x+radius)-map_x(x-radius),
+				  map_y(y+radius)-map_y(y-radius), start_portion*360, portion*360, AS_FILLED_PIE_SLICE);
+//		}
+}
+
+/* plot_pie_or_update_axes:
+ */
+void
+plot_pie_or_update_axes(void *plot, TBOOLEAN project_points, TBOOLEAN update_axes)
+{
+
+    struct coordinate GPHUGE *points;
+    int p_count;
+    int i;
+    double pie_total;
+    double w_hyp[2], b_hyp;                    /* Hyperlane vector and constant */
+    double p_start_corner[2], p_end_corner[2]; /* Points used for computing hyperplane. */
+    int view_port[4];
+    unsigned int K = 0, L = 0;                 /* Dimensions of image grid. K = <scan line length>, L = <number of scan lines>. */
+    double p_mid_corner[2];                    /* Point representing first corner found, i.e. p(K-1) */
+    double delta_x_grid[2] = {0, 0};           /* Spacings between points, two non-orthogonal directions. */
+    double delta_y_grid[2] = {0, 0};
+    int grid_corner[4] = {-1, -1, -1, -1};     /* The corner pixels of the image. */
+
+    double radius = 1;
+
+    if (update_axes) {
+	/* Determine extent of pie.  The pie may not be circular (cylindrical).
+	 * Pieces could be slid outward.
+	 */
+	double x, y;
+	int dummy_type = INRANGE;
+	/* Update range and store value back into itself. */
+	x = radius;
+	STORE_WITH_LOG_AND_UPDATE_RANGE(x, x, dummy_type, ((struct curve_points *)plot)->x_axis, 0, x = -VERYLARGE, );
+	x = -radius;
+	STORE_WITH_LOG_AND_UPDATE_RANGE(x, x, dummy_type, ((struct curve_points *)plot)->x_axis, 0, x = -VERYLARGE, );
+	y = radius;
+	STORE_WITH_LOG_AND_UPDATE_RANGE(y, y, dummy_type, ((struct curve_points *)plot)->y_axis, 0, y = -VERYLARGE, );
+	y = -radius;
+	STORE_WITH_LOG_AND_UPDATE_RANGE(y, y, dummy_type, ((struct curve_points *)plot)->y_axis, 0, y = -VERYLARGE, );
+	return;
+    }
+
+    if (project_points) {
+	points = ((struct surface_points *)plot)->iso_crvs->points;
+	p_count = ((struct surface_points *)plot)->iso_crvs->p_count;
+    } else {
+	points = ((struct curve_points *)plot)->points;
+	p_count = ((struct curve_points *)plot)->p_count;
+    }
+
+    /* Sum up the values for overall pie quantity. */
+    for (i=0, pie_total = 0.0; i < p_count; i++)
+	pie_total += points[i].x;
+
+    if (pie_total > 0) {
+	double pie_start_sum;
+	double epsilon = 0.01;
+	for (i=0, pie_start_sum = 0; i < p_count; i++) {
+	    /* Line type (color) must match row number */
+	    (*term->linetype)(i);
+	    pie_slice(0, 0, 0, radius, pie_start_sum/pie_total - epsilon, points[i].x/pie_total + epsilon, 0);
+	    pie_start_sum += points[i].x;
+	}
+    }
+
+}
+#endif

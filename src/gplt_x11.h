@@ -92,4 +92,8 @@
 /* Maximum image plane value of data transfer.  */
 #define IMAGE_PALETTE_VALUE_MAX USHRT_MAX
 
+#ifdef WITH_PIE
+#define X11_GR_ARC 'a'
+#endif
+
 #endif /* GNUPLOT_GPLT_X11_H */

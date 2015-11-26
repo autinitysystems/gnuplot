@@ -1,0 +1,18 @@
+#
+# Example of using pie modes (Daniel Sebald)
+#
+reset
+set title "Immigration from Northern Europe\n(pie graph)"
+set yrange [-1.2:1.2]
+set xrange [-1.2:1.2]
+#set ylabel "Immigration by decade"
+#set xlabel "Country of Origin"
+#set ticscale 0.0
+#set ytics
+#unset xtics
+#set xtics norotate
+plot 'immigration.dat' using 12 ti col w pie
+#
+pause -1 "Next we make more pies"
+#
+reset

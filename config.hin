@@ -562,6 +562,9 @@
 /* Define if the vgagl libray is present. */
 #undef VGAGL
 
+/* Define if you want to have pie graph plotting support. */
+#undef WITH_PIE
+
 /* Define if you want the wxwidgets terminal. */
 #undef WXWIDGETS
 

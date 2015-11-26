@@ -274,6 +274,11 @@ typedef struct t_image {
  * function without that terminal feature
  */
 
+#ifdef WITH_PIE
+   typedef enum t_arcstyle { AS_LINE, AS_FILLED_CHORD, AS_FILLED_PIE_SLICE }
+	   t_arcstyle;
+#endif
+
 typedef struct TERMENTRY {
     const char *name;
     const char *description;
@@ -369,6 +374,9 @@ typedef struct TERMENTRY {
 
     void (*dashtype) __PROTO((int type, t_dashtype *custom_dash_pattern));
 
+#ifdef WITH_PIE
+    void (*arc) __PROTO((unsigned int, unsigned int, unsigned int, unsigned int, double, double, t_arcstyle));
+#endif
 } TERMENTRY;
 
 # define termentry TERMENTRY

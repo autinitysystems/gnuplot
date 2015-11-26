@@ -702,6 +702,7 @@ const struct gen_table plotstyle_tbl[] =
     { "sur$face", SURFACEGRID },
     { "parallel$axes", PARALLELPLOT },
     { "table", TABLESTYLE },
+    { "pie", PIE },
     { NULL, PLOT_STYLE_NONE }
 };
 

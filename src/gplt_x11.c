@@ -2922,8 +2922,53 @@ exec_cmd(plot_struct *plot, char *command)
 		}
 	    }
 	}
-
     }
+
+    #ifdef WITH_PIE
+
+    else if (*buffer == X11_GR_ARC) {  /* arc of some sort */
+
+      unsigned int x, y, width, height;
+      float start_angle, end_angle;
+      t_arcstyle arc_style;
+      unsigned int tmp_uint;
+   
+      /* Get variables. */
+      if (7 != sscanf( &buffer[1], "%x %x %x %x %f %f %x", &x, &y, &width,
+	       &height, &start_angle, &end_angle, &tmp_uint)) {
+	 fprintf(stderr, ERROR_NOTICE("Couldn't read arc parameters correctly.\n\n"));
+      } else {
+   
+	 XArc arc = {(short) X(x), (short) Y(y),
+	       (unsigned short) X(width)-X(0), (unsigned short) Y(0)-Y(height),
+	       (short)(start_angle*64), (short)(end_angle*64)};
+   
+	 arc_style = (t_arcstyle) tmp_uint;
+   
+	 /* Load selected pattern or fill into a separate gc */
+	 if (!fill_gc)
+	 fill_gc = XCreateGC(dpy,plot->window,0,0);
+	 XCopyGC(dpy, *current_gc, ~0, fill_gc);
+	 current_gc = &fill_gc;
+   
+	 switch (arc_style) {
+	 default:
+	 case AS_LINE:
+	 XDrawArcs(dpy, plot->pixmap, *current_gc, &arc, 1);
+	 break;
+	 case AS_FILLED_CHORD:
+	 XSetArcMode(dpy, *current_gc, ArcChord);
+	 XFillArcs(dpy, plot->pixmap, *current_gc, &arc, 1);
+	 break;
+	 case AS_FILLED_PIE_SLICE:
+	 XSetArcMode(dpy, *current_gc, ArcPieSlice);
+	 XFillArcs(dpy, plot->pixmap, *current_gc, &arc, 1);
+	 break;
+	 }
+      }
+    } 
+
+    #endif
 
     else if (*buffer == X11_GR_IMAGE) {	/* image */
 

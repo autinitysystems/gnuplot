@@ -583,6 +583,13 @@ get_data(struct curve_points *current_plot)
 	max_cols = MAXDATACOLS;
 	break;
 
+#ifdef WITH_PIE
+    case PIE:
+	min_cols = 1;
+	max_cols = 4;
+	break;
+#endif
+
     default:
 	min_cols = 1;
 	max_cols = 2;
@@ -836,10 +843,20 @@ get_data(struct curve_points *current_plot)
 
 	case 1:
 	    {                   /* only one number */
+#ifdef WITH_PIE
+		if(current_plot->plot_style == PIE) {
+		    current_plot->points[i++].x = v[0];
+		    break;
+		}
+		else {
+#endif
 		/* x is index, assign number to y */
 		v[1] = v[0];
 		v[0] = df_datum;
 		/* nobreak */
+#ifdef WITH_PIE
+		}
+#endif
 	    }
 
 	case 2:
@@ -2887,6 +2904,9 @@ eval_plots()
 		    plot_image_or_update_axes(this_plot, TRUE);
 		}
 
+		if ((this_plot->plot_style == PIE)) {
+		    UPDATE_AXES_FOR_PLOT_PIE(this_plot);
+		}
 	    }
 
 	    SKIPPED_EMPTY_FILE:

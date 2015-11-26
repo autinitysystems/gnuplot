@@ -116,4 +116,15 @@ void do_polygon __PROTO((int dimensions, t_polygon *p, int style, t_clip_object 
 
 int filter_boxplot __PROTO((struct curve_points *, int index));
 
+#ifdef WITH_PIE
+void plot_pie_or_update_axes __PROTO((void *plot, TBOOLEAN map_points,
+				      TBOOLEAN update_axes));
+#define PLOT_PIE(plot) \
+	plot_pie_or_update_axes(plot, FALSE, FALSE)
+#define UPDATE_AXES_FOR_PLOT_PIE(plot) \
+	plot_pie_or_update_axes(plot, FALSE, TRUE)
+#define SPLOT_PIE(plot) \
+	plot_pie_or_update_axes(plot, TRUE, FALSE)
+#endif
+
 #endif /* GNUPLOT_GRAPHICS_H */
