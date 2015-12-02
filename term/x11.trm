@@ -117,11 +117,6 @@ TERM_PUBLIC void ENHX11_boxed_text __PROTO((unsigned int, unsigned int, int));
 #endif
 TERM_PUBLIC void X11_modify_plots __PROTO((unsigned int, int));
 
-#ifdef WITH_PIE
-TERM_PUBLIC void X11_arc __PROTO((unsigned int x_center, unsigned int y_center, unsigned int width, unsigned int height,
-				  double start_angle, double end_angle, t_arcstyle arc_style));
-#endif
-
 /* These are the default terminal sizing parameters. These should match the
    sizes in gplt_x11.c, and both specify 640,450 */
 # define X11_XMAX 4096
@@ -2315,26 +2310,6 @@ X11_image(unsigned int M, unsigned int N, coordval *image, gpiPoint *corner, t_i
     return;
 }
 
-#ifdef WITH_PIE
-
-TERM_PUBLIC void
-X11_arc(unsigned int x_center, unsigned int y_center, unsigned int width, unsigned int height,
-	double start_angle, double end_angle, t_arcstyle arc_style)
-{
-    /* Use formatted I/O to transfer information since there aren't likely situations where
-     * a large number of arcs appear on a graph..  Hexadecimal uses less characters.
-     *
-     * Note that X11 has different frame of reference for ellipses (top left) than does
-     * this routine (center center)
-     */
-    fputc(X11_GR_ARC, X11_ipc);
-    fprintf(X11_ipc,"%x %x %x %x %f %f %x\n", (x_center-width/2), (y_center+height/2),
-	    width, height, (float) start_angle, (float) end_angle, (unsigned int) arc_style);
-    FFLUSH();
-}
-
-#endif /* WITH_PIE */
-
 #endif /* TERM_BODY */
 
 #ifdef TERM_TABLE
@@ -2364,7 +2339,6 @@ TERM_TABLE_START(x11_driver)
 #endif
     , X11_modify_plots
     , X11_dashtype
-    , X11_arc
 TERM_TABLE_END(x11_driver)
 
 #undef LAST_TERM

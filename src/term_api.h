@@ -241,11 +241,6 @@ typedef struct t_image {
     TBOOLEAN fallback; /* true == don't use terminal-specific code */
 } t_image;
 
-#ifdef WITH_PIE
-   typedef enum t_arcstyle { AS_LINE, AS_FILLED_CHORD, AS_FILLED_PIE_SLICE }
-	   t_arcstyle;
-#endif
-
 /* Operations possible with term->modify_plots() */
 #define MODPLOTS_SET_VISIBLE         (1<<0)
 #define MODPLOTS_SET_INVISIBLE       (1<<1)
@@ -372,10 +367,6 @@ typedef struct TERMENTRY {
     void (*modify_plots) __PROTO((unsigned int operations, int plotno));
 
     void (*dashtype) __PROTO((int type, t_dashtype *custom_dash_pattern));
-
-#ifdef WITH_PIE
-    void (*arc) __PROTO((unsigned int, unsigned int, unsigned int, unsigned int, double, double, t_arcstyle));
-#endif
 } TERMENTRY;
 
 # define termentry TERMENTRY
