@@ -4907,8 +4907,6 @@ plot_pie_or_update_axes(void *plot, TBOOLEAN project_points, TBOOLEAN update_axe
 	pie_start_sum = 0;
 
 	while(label) {
-	    printf("label at (%.3f, %.3f)\n", pie_start_sum / pie_total * 360, label->place.x / pie_total * 180);
-
 	    double angle = (pie_start_sum / pie_total * 360) + (label->place.x / pie_total * 180.);
 	    double x_pos = cos(angle * DEG2RAD);
 	    double y_pos = sin(angle * DEG2RAD);
