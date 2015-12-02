@@ -585,8 +585,10 @@ get_data(struct curve_points *current_plot)
 
 #ifdef WITH_PIE
     case PIE:
+	// x label
 	min_cols = 1;
-	max_cols = 4;
+	max_cols = 2;
+	expect_string(2);
 	break;
 #endif
 
@@ -843,23 +845,21 @@ get_data(struct curve_points *current_plot)
 
 	case 1:
 	    {                   /* only one number */
-#ifdef WITH_PIE
-		if(current_plot->plot_style == PIE) {
-		    current_plot->points[i++].x = v[0];
-		    break;
-		}
-		else {
-#endif
 		/* x is index, assign number to y */
 		v[1] = v[0];
 		v[0] = df_datum;
 		/* nobreak */
-#ifdef WITH_PIE
-		}
-#endif
 	    }
-
 	case 2:
+#ifdef WITH_PIE
+	    if(current_plot->plot_style == PIE) {
+
+		if (current_plot->points[df_datum].type != UNDEFINED) {
+		    current_plot->points[df_datum].x = v[0];
+		    store_label(current_plot->labels, &(current_plot->points[df_datum]), df_datum, df_tokens[1], current_plot->varcolor ? current_plot->varcolor[df_datum] : 0.0);
+		}
+	    }
+#endif
 	    H_ERR_BARS:
 	    if (current_plot->plot_style == HISTOGRAMS) {
 		if (histogram_opts.type == HT_ERRORBARS) {
@@ -2715,6 +2715,11 @@ eval_plots()
 		if (this_plot->labels == NULL)
 		    this_plot->labels = new_text_label(-1);
 		/* We only use the list to store strings, so this is all we need here. */
+	    }
+
+	    if(this_plot->plot_style == PIE) {
+		if (this_plot->labels == NULL)
+		    this_plot->labels = new_text_label(-1);
 	    }
 
 	    /* Initialize histogram data structure */

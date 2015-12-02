@@ -4831,23 +4831,9 @@ skip_pixel:
  * Plot a pie slice.
  */
 void
-pie_slice(double x, double y, double z, double radius, double start_portion, double portion, double thickness)
+pie_slice(double x, double y, double radius, double start_portion, double portion, double thickness)
 {
-#if 0
-		/* One of the delta values in each direction is zero, so add. */
-		if (project_points) {
-		    double x, y;
-		    map3d_xy_double(points[pixel_1_1].x, points[pixel_1_1].y, points[pixel_1_1].z, &x, &y);
-		    corners[0].x = x - fabs(delta_x_grid[0]+delta_x_grid[1])/2;
-		    corners[0].y = y + fabs(delta_y_grid[0]+delta_y_grid[1])/2;
-		    map3d_xy_double(points[pixel_M_N].x, points[pixel_M_N].y, points[pixel_M_N].z, &x, &y);
-		    corners[1].x = x + fabs(delta_x_grid[0]+delta_x_grid[1])/2;
-		    corners[1].y = y - fabs(delta_y_grid[0]+delta_y_grid[1])/2;
-		} else {
-#endif
-		    (*term->arc) (map_x(x), map_y(y), map_x(x+radius)-map_x(x-radius),
-				  map_y(y+radius)-map_y(y-radius), start_portion*360, portion*360, AS_FILLED_PIE_SLICE);
-//		}
+    do_arc(map_x(x), map_y(y), map_y(radius) / 2, start_portion * 360, (start_portion + portion) * 360, FS_DEFAULT, true);
 }
 
 /* plot_pie_or_update_axes:
@@ -4855,6 +4841,7 @@ pie_slice(double x, double y, double z, double radius, double start_portion, dou
 void
 plot_pie_or_update_axes(void *plot, TBOOLEAN project_points, TBOOLEAN update_axes)
 {
+    draw_border = false;
 
     struct coordinate GPHUGE *points;
     int p_count;
@@ -4889,12 +4876,15 @@ plot_pie_or_update_axes(void *plot, TBOOLEAN project_points, TBOOLEAN update_axe
 	return;
     }
 
+    struct curve_points* curve_plot;
+
     if (project_points) {
 	points = ((struct surface_points *)plot)->iso_crvs->points;
 	p_count = ((struct surface_points *)plot)->iso_crvs->p_count;
     } else {
-	points = ((struct curve_points *)plot)->points;
-	p_count = ((struct curve_points *)plot)->p_count;
+	curve_plot = (struct curve_points*)plot;
+	points = curve_plot->points;
+	p_count = curve_plot->p_count;
     }
 
     /* Sum up the values for overall pie quantity. */
@@ -4903,14 +4893,52 @@ plot_pie_or_update_axes(void *plot, TBOOLEAN project_points, TBOOLEAN update_axe
 
     if (pie_total > 0) {
 	double pie_start_sum;
-	double epsilon = 0.01;
+	double epsilon = 0.02;
+
 	for (i=0, pie_start_sum = 0; i < p_count; i++) {
 	    /* Line type (color) must match row number */
 	    (*term->linetype)(i);
-	    pie_slice(0, 0, 0, radius, pie_start_sum/pie_total - epsilon, points[i].x/pie_total + epsilon, 0);
+
+	    pie_slice(0, 0, radius * 0.5, pie_start_sum/pie_total - epsilon, points[i].x/pie_total + epsilon, 0);
 	    pie_start_sum += points[i].x;
 	}
-    }
 
+	struct text_label* label = curve_plot->labels->next;
+	pie_start_sum = 0;
+
+	while(label) {
+	    printf("label at (%.3f, %.3f)\n", pie_start_sum / pie_total * 360, label->place.x / pie_total * 180);
+
+	    double angle = (pie_start_sum / pie_total * 360) + (label->place.x / pie_total * 180.);
+	    double x_pos = cos(angle * DEG2RAD);
+	    double y_pos = sin(angle * DEG2RAD);
+
+	    char buffer[500];
+	    sprintf(buffer, "%s (%.1f%%)", label->text, label->place.x / pie_total * 100);
+
+	    t_position pos = {
+		.x = x_pos * 0.65,
+		.y = y_pos,
+		.z = 0,
+	    };
+
+	    int x, y;
+
+	    label->text = buffer;
+
+	    if(x_pos < 0) {
+		label->pos = RIGHT;
+	    }
+	    else {
+		label->pos = LEFT;
+	    }
+
+	    map_position(&pos, &x, &y, "label");
+	    write_label(x, y, label);
+
+	    pie_start_sum += label->place.x;
+	    label = label->next;
+	}
+    }
 }
 #endif
