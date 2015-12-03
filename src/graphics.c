@@ -4893,13 +4893,12 @@ plot_pie_or_update_axes(void *plot, TBOOLEAN project_points, TBOOLEAN update_axe
 
     if (pie_total > 0) {
 	double pie_start_sum;
-	double epsilon = 0.02;
 
 	for (i=0, pie_start_sum = 0; i < p_count; i++) {
 	    /* Line type (color) must match row number */
 	    (*term->linetype)(i);
 
-	    pie_slice(0, 0, radius * 0.5, pie_start_sum/pie_total - epsilon, points[i].x/pie_total + epsilon, 0);
+	    pie_slice(0, 0, radius * 0.5, pie_start_sum/pie_total, points[i].x/pie_total, 0);
 	    pie_start_sum += points[i].x;
 	}
 
