@@ -367,6 +367,10 @@ typedef struct TERMENTRY {
     void (*modify_plots) __PROTO((unsigned int operations, int plotno));
 
     void (*dashtype) __PROTO((int type, t_dashtype *custom_dash_pattern));
+
+#ifdef EAM_OBJECTS
+    void (*arc) __PROTO((unsigned int cx, unsigned int cy, double radius, double arc_start, double arc_end, int style, TBOOLEAN wedge));
+#endif
 } TERMENTRY;
 
 # define termentry TERMENTRY

@@ -1512,6 +1512,8 @@ change_term(const char *origname, int length)
     }
     if (term->dashtype == 0)
 	term->dashtype = null_dashtype;
+    if (term->arc == 0)
+    term->arc = do_arc;
 
     if (interactive)
 	fprintf(stderr, "Terminal type set to '%s'\n", term->name);

@@ -101,6 +101,8 @@ TERM_PUBLIC void ENHsvg_writec __PROTO((int));
 TERM_PUBLIC void SVG_path __PROTO((int p));
 TERM_PUBLIC void SVG_hypertext __PROTO((int, const char *));
 
+TERM_PUBLIC void SVG_arc __PROTO((unsigned int cx, unsigned int cy, double radius, double arc_starc, double arc_end, int style, TBOOLEAN wedge));
+
 #ifdef WRITE_PNG_IMAGE
 TERM_PUBLIC void SVG_image __PROTO((unsigned m, unsigned n, coordval *image, gpiPoint *corner, t_imagecolor color_mode));
 #endif
@@ -1711,6 +1713,46 @@ SVG_filled_polygon(int points, gpiPoint* corners)
     fputs("'/>\n", gpoutfile);
 }
 
+TERM_PUBLIC void
+SVG_arc(unsigned int cx, unsigned int cy, double radius, double arc_start, double arc_end, int style, TBOOLEAN wedge) {
+    double start_x = (cx + cos(arc_start * DEG2RAD) * radius);
+    double start_y = (cy + sin(arc_start * DEG2RAD) * radius);
+    double end_x   = (cx + cos(arc_end   * DEG2RAD) * radius);
+    double end_y   = (cy + sin(arc_end   * DEG2RAD) * radius);
+
+    bool short_way = (arc_end - arc_start) <= 180;
+
+    fputs("<path d='", gpoutfile);
+    if(wedge)
+        fprintf(gpoutfile, "M%.*f %.*f ", PREC, X(cx), PREC, Y(cy));
+
+    fprintf(gpoutfile, "L%.*f %.*f ", PREC, X(start_x), PREC, Y(start_y));
+    fprintf(gpoutfile, "A%.*f %.*f %f %d %d %.*f,%.*f ", PREC, X(radius), PREC, X(radius), arc_start, short_way ? 0 : 1, 0, PREC, X(end_x), PREC, Y(end_y));
+
+    if(wedge)
+        fprintf(gpoutfile, "Z");
+
+    fprintf(gpoutfile, "' ");
+
+    switch (style) {
+    case FS_DEFAULT:
+	case FS_SOLID: /* solid fill */
+	case FS_TRANSPARENT_SOLID:
+	    SVG_StyleFillColor();
+		fprintf(gpoutfile, " fill-opacity='%4.2f' ", 1.0 - SVG_alpha);
+	    break;
+	case FS_PATTERN: /* pattern fill */
+	case FS_TRANSPARENT_PATTERN:
+	    fprintf(gpoutfile, " fill = 'url(#gpPat%d)'",
+		    SVG_fillPatternIndex);
+	    break;
+	default:
+	    break;
+    }
+
+    fputs(" />", gpoutfile);
+}
+
 /*------------------------------------------------------------------------------------------------------------------------------------
 	SVG_layer
 ------------------------------------------------------------------------------------------------------------------------------------*/
@@ -2194,6 +2236,9 @@ TERM_TABLE_START (svg_driver)
 #endif
    , NULL		/* modify_plots */
    , SVG_dashtype	/* Version 5 dashtype support */
+#ifdef EAM_OBJECTS
+   , SVG_arc
+#endif
 TERM_TABLE_END (svg_driver)
 
 #undef LAST_TERM
