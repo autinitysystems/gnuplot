@@ -404,11 +404,11 @@ place_objects(struct object *listhead, int layer, int dimensions)
 	    ||  (this_object->clip == OBJ_NOCLIP))
 	    	clip_area = &canvas;
 
-	    do_arc((int)x1, (int)y1, radius, e->arc_begin, e->arc_end, style, FALSE);
+	    term->arc((int)x1, (int)y1, radius, e->arc_begin, e->arc_end, style, FALSE);
 
 	    /* Retrace the border if the style requests it */
 	    if (need_fill_border(fillstyle))
-		do_arc((int)x1, (int)y1, radius, e->arc_begin, e->arc_end, 0, e->wedge);
+		term->arc((int)x1, (int)y1, radius, e->arc_begin, e->arc_end, 0, e->wedge);
 
 	    clip_area = clip_save;
 	    break;
@@ -2133,10 +2133,10 @@ plot_circles(struct curve_points *plot)
 	    /* rgb variable  -  color read from data column */
 	    if (!check_for_variable_color(plot, &plot->varcolor[i]) && withborder)
 		term_apply_lp_properties(&plot->lp_properties);
-	    do_arc(x,y, radius, arc_begin, arc_end, style, FALSE);
+	    term->arc(x,y, radius, arc_begin, arc_end, style, FALSE);
 	    if (withborder) {
 		need_fill_border(&plot->fill_properties);
-		do_arc(x,y, radius, arc_begin, arc_end, 0, default_circle.o.circle.wedge);
+		term->arc(x,y, radius, arc_begin, arc_end, 0, default_circle.o.circle.wedge);
 	    }
 	}
     }
@@ -4831,9 +4831,9 @@ skip_pixel:
  * Plot a pie slice.
  */
 void
-pie_slice(double x, double y, double radius, double start_portion, double portion, double thickness)
+pie_slice(double x, double y, double radius, double start_portion, double portion, bool fill)
 {
-    do_arc(map_x(x), map_y(y), map_y(radius) / 2, start_portion * 360, (start_portion + portion) * 360, FS_DEFAULT, true);
+    (*term->arc)(map_x(x), map_y(y), map_y(radius) / 2, start_portion * 360, (start_portion + portion) * 360, fill ? FS_DEFAULT : 0, true);
 }
 
 /* plot_pie_or_update_axes:
@@ -4859,83 +4859,122 @@ plot_pie_or_update_axes(void *plot, TBOOLEAN project_points, TBOOLEAN update_axe
     double radius = 1;
 
     if (update_axes) {
-	/* Determine extent of pie.  The pie may not be circular (cylindrical).
-	 * Pieces could be slid outward.
-	 */
-	double x, y;
-	int dummy_type = INRANGE;
-	/* Update range and store value back into itself. */
-	x = radius;
-	STORE_WITH_LOG_AND_UPDATE_RANGE(x, x, dummy_type, ((struct curve_points *)plot)->x_axis, 0, x = -VERYLARGE, );
-	x = -radius;
-	STORE_WITH_LOG_AND_UPDATE_RANGE(x, x, dummy_type, ((struct curve_points *)plot)->x_axis, 0, x = -VERYLARGE, );
-	y = radius;
-	STORE_WITH_LOG_AND_UPDATE_RANGE(y, y, dummy_type, ((struct curve_points *)plot)->y_axis, 0, y = -VERYLARGE, );
-	y = -radius;
-	STORE_WITH_LOG_AND_UPDATE_RANGE(y, y, dummy_type, ((struct curve_points *)plot)->y_axis, 0, y = -VERYLARGE, );
-	return;
+        /* Determine extent of pie.  The pie may not be circular (cylindrical).
+        * Pieces could be slid outward.
+        */
+        double x, y;
+        int dummy_type = INRANGE;
+        /* Update range and store value back into itself. */
+        x = radius;
+        STORE_WITH_LOG_AND_UPDATE_RANGE(x, x, dummy_type, ((struct curve_points *)plot)->x_axis, 0, x = -VERYLARGE, );
+        x = -radius;
+        STORE_WITH_LOG_AND_UPDATE_RANGE(x, x, dummy_type, ((struct curve_points *)plot)->x_axis, 0, x = -VERYLARGE, );
+        y = radius;
+        STORE_WITH_LOG_AND_UPDATE_RANGE(y, y, dummy_type, ((struct curve_points *)plot)->y_axis, 0, y = -VERYLARGE, );
+        y = -radius;
+        STORE_WITH_LOG_AND_UPDATE_RANGE(y, y, dummy_type, ((struct curve_points *)plot)->y_axis, 0, y = -VERYLARGE, );
+        return;
     }
 
     struct curve_points* curve_plot;
 
     if (project_points) {
-	points = ((struct surface_points *)plot)->iso_crvs->points;
-	p_count = ((struct surface_points *)plot)->iso_crvs->p_count;
+        points = ((struct surface_points *)plot)->iso_crvs->points;
+        p_count = ((struct surface_points *)plot)->iso_crvs->p_count;
     } else {
-	curve_plot = (struct curve_points*)plot;
-	points = curve_plot->points;
-	p_count = curve_plot->p_count;
+        curve_plot = (struct curve_points*)plot;
+        points = curve_plot->points;
+        p_count = curve_plot->p_count;
     }
 
     /* Sum up the values for overall pie quantity. */
     for (i=0, pie_total = 0.0; i < p_count; i++)
-	pie_total += points[i].x;
+        pie_total += points[i].x;
 
     if (pie_total > 0) {
-	double pie_start_sum;
+        double pie_start_sum;
 
-	for (i=0, pie_start_sum = 0; i < p_count; i++) {
-	    /* Line type (color) must match row number */
-	    (*term->linetype)(i);
+        for (i=0, pie_start_sum = 0; i < p_count; i++) {
+            /* Line type (color) must match row number */
+            (*term->linetype)(i);
+            (*term->linewidth)(0);
+            pie_slice(0, 0, radius * 0.5, pie_start_sum/pie_total, points[i].x/pie_total, true);
 
-	    pie_slice(0, 0, radius * 0.5, pie_start_sum/pie_total, points[i].x/pie_total, 0);
-	    pie_start_sum += points[i].x;
-	}
+            /* mark slices with borders in background-color, looks better and 
+             * workarounds awkward center of the circle where a lot of slices overlap badly */
+            (*term->linetype)(LT_BACKGROUND);
+            (*term->linewidth)(2);
+            pie_slice(0, 0, radius * 0.55, pie_start_sum/pie_total, points[i].x/pie_total, false);
+            pie_start_sum += points[i].x;
+        }
 
-	struct text_label* label = curve_plot->labels->next;
-	pie_start_sum = 0;
+        struct text_label* label = curve_plot->labels->next;
+        pie_start_sum = 0;
 
-	while(label) {
-	    double angle = (pie_start_sum / pie_total * 360) + (label->place.x / pie_total * 180.);
-	    double x_pos = cos(angle * DEG2RAD);
-	    double y_pos = sin(angle * DEG2RAD);
+        double max_y_pos = 2;
+        double min_y_pos = -2;
+        i = 0;
 
-	    char buffer[500];
-	    sprintf(buffer, "%s (%.1f%%)", label->text, label->place.x / pie_total * 100);
+        while(label) {
+            double angle = (pie_start_sum / pie_total * 360) + (label->place.x / pie_total * 180.);
+            double x_pos = cos(angle * DEG2RAD);
+            double y_pos = sin(angle * DEG2RAD);
+            double text_y_pos = y_pos;
 
-	    t_position pos = {
-		.x = x_pos * 0.65,
-		.y = y_pos,
-		.z = 0,
-	    };
+            if(x_pos < 0) {
+                if(text_y_pos > max_y_pos) {
+                    text_y_pos = max_y_pos;
+                }
 
-	    int x, y;
+                max_y_pos = text_y_pos - 0.15;
+                min_y_pos = -2;
+            }
+            else {
+                if(text_y_pos < min_y_pos) {
+                    text_y_pos = min_y_pos;
+                }
 
-	    label->text = buffer;
+                min_y_pos = text_y_pos + 0.15;
+                max_y_pos = 2;
+            }
 
-	    if(x_pos < 0) {
-		label->pos = RIGHT;
-	    }
-	    else {
-		label->pos = LEFT;
-	    }
+            size_t label_length = strlen(label->text);
+            char *buffer = malloc(label_length + 10); // " (100.3%)\0"
+            sprintf(buffer, "%s (%.1f%%)", label->text, label->place.x / pie_total * 100);
 
-	    map_position(&pos, &x, &y, "label");
-	    write_label(x, y, label);
+            t_position pos = {
+                .x = x_pos > 0 ? 0.7 : -0.7,
+                .y = text_y_pos,
+                .z = 0,
+            };
 
-	    pie_start_sum += label->place.x;
-	    label = label->next;
-	}
+            int x, y;
+
+            char* original_label = label->text;
+            label->text = buffer;
+
+            if(x_pos < 0) {
+                label->pos = RIGHT;
+            }
+            else {
+                label->pos = LEFT;
+            }
+
+            map_position(&pos, &x, &y, "label");
+            write_label(x, y, label);
+
+            term->linewidth(1.5);
+            term->linetype(i++);
+            term->move(map_x(x_pos > 0 ? 1.2 : -1.2), map_y(text_y_pos - 0.05));
+            term->vector(map_x(x_pos > 0 ? 0.7 : -0.7), map_y(text_y_pos - 0.05));
+            term->vector(map_x(x_pos * 0.6), map_y(y_pos * 0.85));
+
+            pie_start_sum += label->place.x;
+            label->text = original_label;
+            free(buffer);
+
+            label = label->next;
+        }
     }
 }
 #endif
