@@ -4894,20 +4894,6 @@ plot_pie_or_update_axes(void *plot, TBOOLEAN project_points, TBOOLEAN update_axe
     if (pie_total > 0) {
         double pie_start_sum;
 
-        for (i=0, pie_start_sum = 0; i < p_count; i++) {
-            /* Line type (color) must match row number */
-            (*term->linetype)(i);
-            (*term->linewidth)(0);
-            pie_slice(0, 0, radius * 0.5, pie_start_sum/pie_total, points[i].x/pie_total, true);
-
-            /* mark slices with borders in background-color, looks better and 
-             * workarounds awkward center of the circle where a lot of slices overlap badly */
-            (*term->linetype)(LT_BACKGROUND);
-            (*term->linewidth)(2);
-            pie_slice(0, 0, radius * 0.55, pie_start_sum/pie_total, points[i].x/pie_total, false);
-            pie_start_sum += points[i].x;
-        }
-
         struct text_label* label = curve_plot->labels->next;
         pie_start_sum = 0;
 
@@ -4916,7 +4902,7 @@ plot_pie_or_update_axes(void *plot, TBOOLEAN project_points, TBOOLEAN update_axe
         i = 0;
 
         while(label) {
-            double angle = (pie_start_sum / pie_total * 360) + (label->place.x / pie_total * 180.);
+            double angle = ((pie_start_sum / pie_total) + (label->place.x / pie_total / 2)) * 360.0f;
             double x_pos = cos(angle * DEG2RAD);
             double y_pos = sin(angle * DEG2RAD);
             double text_y_pos = y_pos;
@@ -4926,7 +4912,7 @@ plot_pie_or_update_axes(void *plot, TBOOLEAN project_points, TBOOLEAN update_axe
                     text_y_pos = max_y_pos;
                 }
 
-                max_y_pos = text_y_pos - 0.15;
+                max_y_pos = text_y_pos - 0.1;
                 min_y_pos = -2;
             }
             else {
@@ -4934,7 +4920,7 @@ plot_pie_or_update_axes(void *plot, TBOOLEAN project_points, TBOOLEAN update_axe
                     text_y_pos = min_y_pos;
                 }
 
-                min_y_pos = text_y_pos + 0.15;
+                min_y_pos = text_y_pos + 0.1;
                 max_y_pos = 2;
             }
 
@@ -4943,7 +4929,7 @@ plot_pie_or_update_axes(void *plot, TBOOLEAN project_points, TBOOLEAN update_axe
             sprintf(buffer, "%s (%.1f%%)", label->text, label->place.x / pie_total * 100);
 
             t_position pos = {
-                .x = x_pos > 0 ? 0.7 : -0.7,
+                .x = x_pos > 0 ? 0.75 : -0.75,
                 .y = text_y_pos,
                 .z = 0,
             };
@@ -4963,11 +4949,13 @@ plot_pie_or_update_axes(void *plot, TBOOLEAN project_points, TBOOLEAN update_axe
             map_position(&pos, &x, &y, "label");
             write_label(x, y, label);
 
-            term->linewidth(1.5);
+            term->linewidth(1);
             term->linetype(i++);
+
             term->move(map_x(x_pos > 0 ? 1.2 : -1.2), map_y(text_y_pos - 0.05));
-            term->vector(map_x(x_pos > 0 ? 0.7 : -0.7), map_y(text_y_pos - 0.05));
-            term->vector(map_x(x_pos * 0.6), map_y(y_pos * 0.85));
+            term->vector(map_x(x_pos > 0 ? 0.75 : -0.75), map_y(text_y_pos - 0.05));
+            term->vector(map_x(x_pos / 1.3), map_y(text_y_pos - 0.05));
+            term->vector(map_x(0), map_y(0));
 
             pie_start_sum += label->place.x;
             label->text = original_label;
@@ -4975,6 +4963,21 @@ plot_pie_or_update_axes(void *plot, TBOOLEAN project_points, TBOOLEAN update_axe
 
             label = label->next;
         }
+
+        for (i=0, pie_start_sum = 0; i < p_count; i++) {
+            /* Line type (color) must match row number */
+            (*term->linetype)(i);
+            (*term->linewidth)(0);
+            pie_slice(0, 0, radius * 0.5, pie_start_sum/pie_total, points[i].x/pie_total, true);
+
+            /* mark slices with borders in background-color, looks better and
+             * workarounds awkward center of the circle where a lot of slices overlap badly */
+            (*term->linetype)(LT_BACKGROUND);
+            (*term->linewidth)(2);
+            pie_slice(0, 0, radius * 0.55, pie_start_sum/pie_total, points[i].x/pie_total, false);
+            pie_start_sum += points[i].x;
+        }
+
     }
 }
 #endif
